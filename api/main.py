@@ -8,6 +8,11 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 import os, getpass, asyncio
 
+"""
+- Memory
+- Streaming
+"""
+
 load_dotenv()
 
 app = FastAPI()
@@ -55,3 +60,5 @@ async def chat_endpoint(request_data: ChatRequest):
     
     result = model.invoke(temp)
     return {"success": True, "message": result.content}
+
+    #* MEMORY 
