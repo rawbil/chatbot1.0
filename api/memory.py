@@ -10,6 +10,10 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_tavily import TavilySearch
 import json
 from langchain_core.messages import ToolMessage
+from langgraph.checkpoint.memory import InMemorySaver
+
+memory = InMemorySaver()
+
 import os, getpass
 from dotenv import load_dotenv
 
@@ -131,12 +135,45 @@ graph_builder.add_edge(
 )  # tells the graph to terminate after running the chatbot node
 
 # * 6. Compile the graph
-graph = graph_builder.compile()
-initial = HumanMessage(
+graph = graph_builder.compile(checkpointer=memory)
+
+user_input = "My name is Bildad"
+user_input2 = "What is my name and age?"
+
+config = {"configurable": {"thread_id": "1"}}
+
+
+# First conversation
+graph.invoke({"messages": [{"role": "user", "content": user_input}]}, config)
+
+# Second conversation in the same thread
+output = graph.invoke({"messages": [{"role": "user", "content": user_input2}]}, config)
+
+output["messages"][-1].pretty_print()
+
+# The config is the **second positional argument** to stream() or invoke()!
+# graph.stream(
+#     {"messages": [{"role": "user", "content": user_input}]},
+#     config,
+#     stream_mode="values",
+# )
+#
+# user_input2 = "Do you remember my name? "
+# events = graph.stream(
+#     {"messages": [{"role": "user", "content": user_input2}]},
+#     config,
+#     stream_mode="values",
+# )
+#
+# for event in events:
+#     event["messages"][-1].pretty_print()
+
+
+"""initial = HumanMessage(
     content="Do you have any memory of previous conversations with me?"
 )
 state = {"messages": [initial]}
 
 output = graph.invoke(state)
 # print(output["messages"][-1].content)
-print(output["messages"][-1].content)
+print(output["messages"][-1].content)"""
