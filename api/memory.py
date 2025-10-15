@@ -143,30 +143,35 @@ user_input2 = "What is my name and age?"
 config = {"configurable": {"thread_id": "1"}}
 
 
-# First conversation
+"""# First conversation
 graph.invoke({"messages": [{"role": "user", "content": user_input}]}, config)
 
 # Second conversation in the same thread
 output = graph.invoke({"messages": [{"role": "user", "content": user_input2}]}, config)
 
-output["messages"][-1].pretty_print()
+output["messages"][-1].pretty_print()"""
 
 # The config is the **second positional argument** to stream() or invoke()!
-# graph.stream(
-#     {"messages": [{"role": "user", "content": user_input}]},
-#     config,
-#     stream_mode="values",
-# )
-#
-# user_input2 = "Do you remember my name? "
-# events = graph.stream(
-#     {"messages": [{"role": "user", "content": user_input2}]},
-#     config,
-#     stream_mode="values",
-# )
-#
-# for event in events:
-#     event["messages"][-1].pretty_print()
+
+# first user message
+events = graph.stream(
+    {"messages": [{"role": "user", "content": user_input}]},
+    config,
+    stream_mode="values",
+)
+
+for event in events:
+    event["messages"][-1].pretty_print()
+
+# Second user message
+events = graph.stream(
+    {"messages": [{"role": "user", "content": user_input2}]},
+    config,
+    stream_mode="values",
+)
+
+for event in events:
+    event["messages"][-1].pretty_print()
 
 
 """initial = HumanMessage(
