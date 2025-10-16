@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os, io
 from pydantic import BaseModel
-from typing import Annotated, TypeDict
+from typing import Annotated, TypedDict
 from PIL import Image
 
 # Langchain and Langgraph imports
@@ -36,6 +36,7 @@ app.add_middleware(
 )
 
 
+# try:
 #########################################
 # *  Define chat schema
 #########################################
@@ -71,14 +72,13 @@ model = init_chat_model(model="gpt-4o-mini", model_provider="openai")
 # Add tools to the model
 llm_with_tools = model.bind_tools(tools)
 
-
 ##############################
 # * Create a State Graph
 # - To define the structure of our chat
 ##############################
 
 
-class State(TypeDict):
+class State(TypedDict):
     messages: Annotated[list, add_messages]
 
 
@@ -99,16 +99,57 @@ def chatbot(state: State):
 ################################
 graph_builder.add_node("tools", ToolNode(tools=[wiki_tool, repl_tool]))
 
-
 ###############################
-#* Add graph edges
+# * Add graph edges
 ###############################
-graph_builder.add_edge(START, chatbot)
+graph_builder.add_edge(START, "chatbot")
 graph_builder.add_edge("tools", "chatbot")
+graph_builder.add_node("chatbot", chatbot)
 graph_builder.add_conditional_edges("chatbot", tools_condition)
 graph_builder.add_edge("chatbot", END)
 
 ###################################
-#* Compile the graph
+# * Compile the graph
 ###################################
-graph_builder.compile()
+graph = graph_builder.compile()
+# except Exception as e:
+#     print("An error occured: ", e)
+
+
+# * /
+@app.get("/")
+async def home():
+    return {"success": True, "message": "Welcome Home!"}
+
+
+###################################
+# * chat route
+###################################
+@app.post("/chat")
+async def chat_endpoint(request: ChatRequest):
+    try:
+        question = request.message
+
+        # ~System message
+        system_message = """
+    You are a helpful AI assistant.
+    - Use Wikipedia to answer factual questions.
+    - Use the Python REPL to execute computations and run short code snippets.
+    - Detect which tool (Wikipedia or python_repl) is needed and call it when appropriate.
+    - Prefer concise, professional answers; avoid unnecessary exposition.
+        """.strip()
+
+        events = graph.stream(
+            {"messages": [("system", system_message), ("user", question)]},
+            stream_mode="values",
+        )
+
+        response = ""
+        for event in events:
+            response = event["messages"][-1].pretty_print()
+        return {"response": response}
+
+        ###END of fn
+    except Exception as e:
+        print("An exception occurred:", e)
+        return {"success": False, "error": str(e)}

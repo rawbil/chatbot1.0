@@ -12,13 +12,15 @@ import json
 from langchain_core.messages import ToolMessage
 from langgraph.checkpoint.memory import InMemorySaver
 
-memory = InMemorySaver() # temporary memory - Stores memory in RAM, and when the session ends or the app is restarted, the memory is gone.
+memory = (
+    InMemorySaver()
+)  # temporary memory - Stores memory in RAM, and when the session ends or the app is restarted, the memory is gone.
 
-#~ For memory persistence, store chats in a db
-'''class MongoSaver(BaseCheckpointSaver):
+# ~ For memory persistence, store chats in a db
+"""class MongoSaver(BaseCheckpointSaver):
     def get(self, config): ...
     def put(self, config, state): ...
-'''
+"""
 
 import os, getpass
 from dotenv import load_dotenv
