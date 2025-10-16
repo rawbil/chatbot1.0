@@ -36,7 +36,6 @@ app.add_middleware(
 )
 
 
-
 #########################################
 # *  Define chat schema
 #########################################
@@ -59,15 +58,53 @@ python_repl = PythonREPL()
 repl_tool = Tool(
     name="python_repl",
     description="Execute python code using this shell. Use print(...) to display results",
-    func=python_repl.run
+    func=python_repl.run,
 )
 
 tools = [wiki_tool, repl_tool]
 
 ################################
-#* Initialize chat model
+# * Initialize chat model
 ################################
 model = init_chat_model(model="gpt-4o-mini", model_provider="openai")
 
 # Add tools to the model
 llm_with_tools = model.bind_tools(tools)
+
+
+##############################
+# * Create a State Graph
+# - To define the structure of our chat
+##############################
+
+
+class State(TypeDict):
+    messages: Annotated[list, add_messages]
+
+
+#############################
+# * Build Langgraph workflow
+#############################
+graph_builder = StateGraph(State)
+
+
+def chatbot(state: State):
+    msgs = state["messages"]
+    response = llm_with_tools.invoke(msgs)
+    return {"messages": [response]}
+
+
+################################
+# * Add tools to the graph
+################################
+graph_builder.add_node("tools", ToolNode(tools=[wiki_tool, repl_tool]))
+
+
+###############################
+#* Add graph edges
+###############################
+graph_builder.add_edge(START, chatbot)
+graph_builder.add_edge("tools", "chatbot")
+graph_builder.add_conditional_edges("chatbot", tools_condition)
+graph_builder.add_edge("chatbot", END)
+
