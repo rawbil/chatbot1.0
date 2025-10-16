@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 import os, io
 from pydantic import BaseModel
@@ -19,6 +20,17 @@ from langchain_community.tools import WikipediaQueryRun
 # from langchain_groq import ChatGroq
 from langchain_experimental.utilities import PythonREPL
 from langchain_core.tools import Tool
+from langgraph.checkpoint.memory import InMemorySaver
+
+memory = (
+    InMemorySaver()
+)  # temporary memory - Stores memory in RAM, and when the session ends or the app is restarted, the memory is gone.
+
+# ~ For memory persistence, store chats in a db
+"""class MongoSaver(BaseCheckpointSaver):
+    def get(self, config): ...
+    def put(self, config, state): ...
+"""
 
 
 load_dotenv()
@@ -111,9 +123,11 @@ graph_builder.add_edge("chatbot", END)
 ###################################
 # * Compile the graph
 ###################################
-graph = graph_builder.compile()
+graph = graph_builder.compile(checkpointer=memory)
 # except Exception as e:
 #     print("An error occured: ", e)
+
+config = {"configurable": {"thread_id": "1"}}
 
 
 # * /
@@ -141,13 +155,25 @@ async def chat_endpoint(request: ChatRequest):
 
         events = graph.stream(
             {"messages": [("system", system_message), ("user", question)]},
+            config,
             stream_mode="values",
         )
 
-        response = ""
-        for event in events:
-            response = event["messages"][-1].pretty_print()
-        return {"response": response}
+        """ response = ""
+            for event in events:
+                # response = event["messages"][-1].pretty_print()
+                response = event["messages"][-1].content"""
+
+        def generate_response():
+            for event in events:
+                msg = event["messages"][-1]
+                # Only yield ai output
+                if msg.type == "ai":
+                    yield msg.content + "\n"
+
+        return StreamingResponse(generate_response(), media_type="text/plain")
+
+        # return {"response": response}
 
         ###END of fn
     except Exception as e:
