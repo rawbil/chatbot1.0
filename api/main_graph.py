@@ -13,6 +13,7 @@ from langchain_core.messages import ToolMessage
 import os, getpass
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 if not os.environ.get("OPENAI_API_KEY"):

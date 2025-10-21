@@ -1,41 +1,22 @@
-"use client"
+"use client";
 import { useState } from "react";
+import ChatBot from "./chatbot/page";
+import { useRouter } from "next/navigation";
 
 export default function Chat() {
-  const [message, setMessage] = useState("");
-  const [response, setResponse] = useState("")
-
-  const sendMessage = async() => {
-    try {
-     // const backend_url = process.env.NEXT_PUBLIC_API_URL as string
-      const response = await fetch(`http://127.0.0.1:8000/chat`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ message })
-      })
-
-      const data = await response.json();
-      setResponse(data.message)
-    } catch (error: any) {
-      console.log(error.message);
-    }
-  }
-
+  const router = useRouter()
   return (
-    <section className="p-2">
-      <h2>ChatMe</h2>
-      <textarea
-        name="chatbox"
-        id="chatbox"  
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="Type your message..."
-        rows={4}
-        cols={50}
-        className="border"
-      ></textarea><br />
-      <button onClick={sendMessage} className="bg-green-500 cursor-pointer p-1 px-2 rounded ">Send</button>
-      <p><strong>Bot: </strong>{response}</p>
-    </section>
+    <>
+      <div className="relative h-[98vh]">
+        <section className="absolute bottom-0 right-2 flex flex-col items-center cursor-pointer" onClick={() => router.push('/chatbot')}>
+          <p className="font-medium">Chat with us</p>
+          <section className="absolute bottom-6">
+            <div className="bg-[royalblue] w-10 h-10 rounded-full animate-pulse"></div>{" "}
+            <p className="absolute bg-green-500 w-5 h-5 rounded-full top-0 -right-2 z-10 animate-bounce"></p>
+            <p className="absolute bg-green-500 w-5 h-5 rounded-full top-0 -left-2 z-10 animate-bounce"></p>
+          </section>
+        </section>
+      </div>
+    </>
   );
 }

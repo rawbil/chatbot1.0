@@ -54,7 +54,7 @@ app.add_middleware(
 #########################################
 class ChatRequest(BaseModel):
     message: str
-    session_id: str
+    # session_id: str
 
 
 ######################################
