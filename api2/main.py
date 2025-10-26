@@ -8,6 +8,7 @@ from typing import Annotated
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode, tools_condition
 
 from langchain.chat_models import init_chat_model
 from langchain_community.utilities import WikipediaAPIWrapper
@@ -75,11 +76,18 @@ llm_with_tools = model.bind_tools(tools)
 def chatbot(state: State):
     return {"messages": [llm_with_tools.invoke(state["messages"])]}
 
+#~ Add tools to the graph
+graph_builder.add_node("tools", ToolNode(tools=[wiki_tool, repl_tool]))
 
+#~ Add nodes
 # ^ define node with unique name
 graph_builder.add_node("chatbot", chatbot)
+
+#~ Add edges
 # ^ Add entry point
 graph_builder.add_edge(START, "chatbot")
+graph_builder.add_edge("tools", "chatbot")
+graph_builder.add_conditional_edges("chatbot", tools_condition)
 # ^ Add exit point
 graph_builder.add_edge("chatbot", END)
 # ^ Compile graph
